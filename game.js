@@ -138,15 +138,15 @@ class PixelCityGame {
     }
     
     updateAgents() {
-        // Slow down agent updates - only update every 4 frames
-        if (this.frameCount % 4 !== 0) return;
+        // Slow down agent updates - only update every 6 frames (50% slower)
+        if (this.frameCount % 6 !== 0) return;
         
         this.agents.forEach(agent => {
             if (this.paused) return;
             
-            // Basic needs (much slower for realistic simulation)
-            agent.hunger += 0.015; // Very slow hunger
-            agent.energy -= 0.008; // Very slow energy drain
+            // Basic needs (50% slower than before)
+            agent.hunger += 0.0075; // 50% slower hunger
+            agent.energy -= 0.004; // 50% slower energy drain
             
             if (agent.hunger > 80) {
                 agent.status = 'Hungry';
@@ -170,8 +170,8 @@ class PixelCityGame {
                         this.exploreBehavior(agent);
                 }
                 
-                // Social interaction - agents talk to each other occasionally
-                if (Math.random() < 0.05) { // 5% chance per update
+                // Social interaction - agents talk to each other occasionally (slower)
+                if (Math.random() < 0.025) { // 2.5% chance per update (50% slower)
                     this.socialInteraction(agent);
                 }
             }
@@ -335,7 +335,7 @@ class PixelCityGame {
             
             // Building progress accumulates
             if (!agent.buildingProgress) agent.buildingProgress = 0;
-            agent.buildingProgress += 1;
+            agent.buildingProgress += 0.5; // 50% slower building
             
             // House completed when progress reaches 15
             if (agent.buildingProgress >= 15) {
@@ -404,8 +404,8 @@ class PixelCityGame {
         // Farmers get tired from work
         agent.energy -= 0.02;
         
-        // Food production based on energy and skill
-        if (Math.random() < 0.08 && agent.energy > 40) {
+        // Food production based on energy and skill (slower)
+        if (Math.random() < 0.04 && agent.energy > 40) { // 50% slower
             const foodProduced = 3 + Math.floor(Math.random() * 4);
             this.resources.food += foodProduced;
             agent.status = `Harvested ${foodProduced} food`;
@@ -488,8 +488,8 @@ class PixelCityGame {
     updateTime() {
         if (this.paused) return;
         
-        // Slow down time progression - update every 6 frames
-        if (this.frameCount % 6 === 0) {
+        // Slow down time progression - update every 9 frames (50% slower)
+        if (this.frameCount % 9 === 0) {
             this.time += this.speed;
             if (this.time >= 1440) { // 24 hours
                 this.time = 0;
@@ -674,10 +674,10 @@ class PixelCityGame {
         // Update UI
         this.updateUI();
         
-        // Continue loop with frame rate control
+        // Continue loop with frame rate control - 50% slower than before
         setTimeout(() => {
             requestAnimationFrame(() => this.gameLoop());
-        }, 1000 / 20); // 20 FPS for slower, more realistic simulation
+        }, 1000 / 13.33); // ~13.3 FPS (50% slower than 20 FPS)
     }
 }
 
