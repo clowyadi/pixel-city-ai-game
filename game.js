@@ -16,6 +16,7 @@ class PixelCityGame {
         this.time = 480; // 8:00 AM in minutes
         this.paused = false;
         this.speed = 1;
+        this.frameCount = 0;
         
         // Resources
         this.resources = {
@@ -137,12 +138,15 @@ class PixelCityGame {
     }
     
     updateAgents() {
+        // Slow down agent updates - only update every 4 frames
+        if (this.frameCount % 4 !== 0) return;
+        
         this.agents.forEach(agent => {
             if (this.paused) return;
             
-            // Basic needs
-            agent.hunger += 0.1;
-            agent.energy -= 0.05;
+            // Basic needs (slowed down)
+            agent.hunger += 0.025; // Reduced from 0.1
+            agent.energy -= 0.0125; // Reduced from 0.05
             
             if (agent.hunger > 80) {
                 agent.status = 'Hungry';
@@ -295,14 +299,17 @@ class PixelCityGame {
     updateTime() {
         if (this.paused) return;
         
-        this.time += this.speed;
-        if (this.time >= 1440) { // 24 hours
-            this.time = 0;
-            this.day++;
-            
-            // Daily resource consumption
-            this.resources.food -= this.agents.length * 2;
-            if (this.resources.food < 0) this.resources.food = 0;
+        // Slow down time progression - update every 4 frames
+        if (this.frameCount % 4 === 0) {
+            this.time += this.speed;
+            if (this.time >= 1440) { // 24 hours
+                this.time = 0;
+                this.day++;
+                
+                // Daily resource consumption
+                this.resources.food -= this.agents.length * 2;
+                if (this.resources.food < 0) this.resources.food = 0;
+            }
         }
     }
     
@@ -445,6 +452,9 @@ class PixelCityGame {
     }
     
     gameLoop() {
+        // Increment frame counter
+        this.frameCount++;
+        
         // Clear canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
@@ -460,8 +470,10 @@ class PixelCityGame {
         // Update UI
         this.updateUI();
         
-        // Continue loop
-        requestAnimationFrame(() => this.gameLoop());
+        // Continue loop with frame rate control
+        setTimeout(() => {
+            requestAnimationFrame(() => this.gameLoop());
+        }, 1000 / 30); // 30 FPS instead of 60
     }
 }
 
