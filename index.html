@@ -142,6 +142,12 @@
             padding-left: 5px;
         }
         
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
         .controls {
             display: flex;
             gap: 10px;
@@ -269,6 +275,8 @@
                     <button id="speed2x">2x Speed</button>
                     <button id="pauseBtn">⏸️ Pause</button>
                     <button id="addAgentBtn">➕ Add Agent</button>
+                    <button id="saveBtn" style="background: #4CAF50;">💾 Save</button>
+                    <button id="resetBtn" style="background: #f44336;">🔄 Reset</button>
                 </div>
                 
                 <div class="mobile-notice">

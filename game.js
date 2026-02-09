@@ -36,7 +36,10 @@ class PixelCityGame {
         
         // Initialize
         this.initMap();
-        this.createInitialAgents();
+        this.loadGame(); // Try to load saved game
+        if (this.agents.length === 0) {
+            this.createInitialAgents(); // Only create if no saved agents
+        }
         this.setupUI();
         this.gameLoop();
     }
@@ -108,6 +111,19 @@ class PixelCityGame {
             if (this.agents.length < this.maxAgents) {
                 this.addNewAgent();
             }
+        });
+        
+        // Reset game button
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset the game? All progress will be lost!')) {
+                this.resetGame();
+            }
+        });
+        
+        // Manual save button
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            this.saveGame();
+            alert('Game saved! Your progress will be restored when you refresh.');
         });
         
         this.updateButtonStates();
@@ -678,6 +694,102 @@ class PixelCityGame {
         setTimeout(() => {
             requestAnimationFrame(() => this.gameLoop());
         }, 1000 / 10); // 10 FPS (Good balance - watchable but not frantic)
+        
+        // Auto-save every 30 seconds
+        if (this.frameCount % 300 === 0) { // 10 FPS * 30 seconds = 300 frames
+            this.saveGame();
+        }
+    }
+    
+    // Save game to localStorage
+    saveGame() {
+        try {
+            const gameData = {
+                day: this.day,
+                time: this.time,
+                resources: this.resources,
+                agents: this.agents.map(agent => ({
+                    x: agent.x,
+                    y: agent.y,
+                    name: agent.name,
+                    role: agent.role,
+                    hunger: agent.hunger,
+                    energy: agent.energy,
+                    status: agent.status,
+                    target: agent.target,
+                    buildingProgress: agent.buildingProgress || 0,
+                    memory: agent.memory || []
+                })),
+                lastSave: Date.now()
+            };
+            
+            localStorage.setItem('pixelCitySave', JSON.stringify(gameData));
+            console.log('Game saved!');
+        } catch (error) {
+            console.error('Failed to save game:', error);
+        }
+    }
+    
+    // Load game from localStorage
+    loadGame() {
+        try {
+            const saved = localStorage.getItem('pixelCitySave');
+            if (!saved) {
+                console.log('No saved game found, starting fresh.');
+                return;
+            }
+            
+            const gameData = JSON.parse(saved);
+            
+            // Restore basic state
+            this.day = gameData.day || 1;
+            this.time = gameData.time || 480;
+            this.resources = gameData.resources || { wood: 100, food: 150, houses: 0 };
+            
+            // Restore agents
+            this.agents = gameData.agents || [];
+            
+            // Restore agent methods (JSON doesn't save methods)
+            this.agents.forEach(agent => {
+                agent.hasHouse = agent.role === 'builder' && agent.buildingProgress >= 15;
+                agent.target = null; // Reset targets on load
+            });
+            
+            console.log(`Game loaded! Day ${this.day}, ${this.agents.length} agents, ${this.resources.houses} houses.`);
+            
+            // Show loaded message
+            setTimeout(() => {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = `Game loaded! Day ${this.day}, ${this.agents.length} agents`;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #4CAF50;
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    z-index: 1000;
+                    animation: fadeOut 3s forwards;
+                `;
+                document.body.appendChild(notification);
+                
+                // Remove after animation
+                setTimeout(() => notification.remove(), 3000);
+            }, 500);
+            
+        } catch (error) {
+            console.error('Failed to load game:', error);
+            // Start fresh if load fails
+            this.agents = [];
+        }
+    }
+    
+    // Reset game (clear save)
+    resetGame() {
+        localStorage.removeItem('pixelCitySave');
+        location.reload();
     }
 }
 
