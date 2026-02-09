@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel City AI Agents</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #e6e6e6;
+            line-height: 1.4;
+            padding: 10px;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 15px 0;
+            border-bottom: 2px solid #4cc9f0;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #4cc9f0;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            color: #a9a9a9;
+            font-size: 14px;
+        }
+        
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        @media (min-width: 768px) {
+            .game-area {
+                flex-direction: row;
+            }
+        }
+        
+        .canvas-container {
+            flex: 2;
+            background: #16213e;
+            border: 3px solid #0f3460;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #gameCanvas {
+            width: 100%;
+            height: 400px;
+            display: block;
+            background: #0f3460;
+        }
+        
+        .ui-panel {
+            flex: 1;
+            background: #16213e;
+            border: 3px solid #0f3460;
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 400px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-box {
+            background: #0f3460;
+            padding: 10px;
+            border-radius: 3px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            color: #4cc9f0;
+            font-weight: bold;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #a9a9a9;
+            margin-top: 3px;
+        }
+        
+        .agents-list {
+            margin-top: 20px;
+        }
+        
+        .agent-item {
+            background: #0f3460;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 3px;
+            border-left: 3px solid #4cc9f0;
+            font-size: 12px;
+        }
+        
+        .agent-name {
+            color: #4cc9f0;
+            font-weight: bold;
+        }
+        
+        .agent-status {
+            color: #a9a9a9;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: #4cc9f0;
+            color: #1a1a2e;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        button:hover {
+            background: #3ab8df;
+        }
+        
+        button:disabled {
+            background: #2a5a6e;
+            cursor: not-allowed;
+        }
+        
+        .time-display {
+            text-align: center;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 3px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .day-count {
+            color: #4cc9f0;
+            font-weight: bold;
+        }
+        
+        .mobile-notice {
+            display: none;
+            background: #0f3460;
+            padding: 10px;
+            border-radius: 3px;
+            margin-top: 10px;
+            text-align: center;
+            font-size: 12px;
+            color: #a9a9a9;
+        }
+        
+        @media (max-width: 767px) {
+            .mobile-notice {
+                display: block;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            button {
+                min-width: 100%;
+            }
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #0f3460;
+            color: #a9a9a9;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏙️ Pixel City AI Agents</h1>
+            <p class="subtitle">Watch AI agents build a community from scratch</p>
+        </header>
+        
+        <div class="game-area">
+            <div class="canvas-container">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+            
+            <div class="ui-panel">
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="population">10</div>
+                        <div class="stat-label">Population</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="houses">0</div>
+                        <div class="stat-label">Houses</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="wood">100</div>
+                        <div class="stat-label">Wood</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="food">150</div>
+                        <div class="stat-label">Food</div>
+                    </div>
+                </div>
+                
+                <div class="time-display">
+                    Day: <span class="day-count" id="dayCount">1</span> | 
+                    Time: <span class="day-count" id="timeDisplay">08:00</span>
+                </div>
+                
+                <div class="agents-list">
+                    <h3>🤖 Active Agents</h3>
+                    <div id="agentsContainer">
+                        <!-- Agents will be added here by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="speed1x">1x Speed</button>
+                    <button id="speed2x">2x Speed</button>
+                    <button id="pauseBtn">⏸️ Pause</button>
+                    <button id="addAgentBtn">➕ Add Agent</button>
+                </div>
+                
+                <div class="mobile-notice">
+                    📱 Mobile friendly - Tap to interact
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Phase 1 MVP | AI Agents build community | Refresh to restart</p>
+            <p>GitHub: pixel-city-ai-game | Made with OpenClaw</p>
+        </footer>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
