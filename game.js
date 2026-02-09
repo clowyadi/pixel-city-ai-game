@@ -144,9 +144,9 @@ class PixelCityGame {
         this.agents.forEach(agent => {
             if (this.paused) return;
             
-            // Basic needs (slowed down)
-            agent.hunger += 0.025; // Reduced from 0.1
-            agent.energy -= 0.0125; // Reduced from 0.05
+            // Basic needs (much slower for realistic simulation)
+            agent.hunger += 0.015; // Very slow hunger
+            agent.energy -= 0.008; // Very slow energy drain
             
             if (agent.hunger > 80) {
                 agent.status = 'Hungry';
@@ -168,6 +168,11 @@ class PixelCityGame {
                         break;
                     default:
                         this.exploreBehavior(agent);
+                }
+                
+                // Social interaction - agents talk to each other occasionally
+                if (Math.random() < 0.05) { // 5% chance per update
+                    this.socialInteraction(agent);
                 }
             }
             
@@ -214,30 +219,214 @@ class PixelCityGame {
         }
     }
     
-    builderBehavior(agent) {
-        if (this.resources.wood >= 20 && this.resources.houses < 5) {
-            // Try to build a house
-            agent.status = 'Building house';
-            this.resources.wood -= 1;
-            if (Math.random() < 0.1) {
-                this.resources.houses++;
-                agent.status = 'Built house!';
+    socialInteraction(agent) {
+        // Find a nearby agent to talk to
+        const nearbyAgents = this.agents.filter(other => {
+            if (other.id === agent.id) return false;
+            const dx = Math.abs(other.x - agent.x);
+            const dy = Math.abs(other.y - agent.y);
+            return dx < 3 && dy < 3; // Within 3 tiles
+        });
+        
+        if (nearbyAgents.length > 0) {
+            const otherAgent = nearbyAgents[Math.floor(Math.random() * nearbyAgents.length)];
+            
+            // Different types of conversations based on needs and resources
+            const conversationTypes = [];
+            
+            // Ask for resources if needed
+            if (agent.hunger > 50 && this.resources.food > 10) {
+                conversationTypes.push('askForFood');
             }
-        } else {
-            agent.status = 'Gathering wood';
-            this.gatherWood(agent);
+            if (agent.job === 'Builder' && this.resources.wood < 30) {
+                conversationTypes.push('askForWood');
+            }
+            if (agent.status.includes('Hungry') || agent.status.includes('Tired')) {
+                conversationTypes.push('complainAboutNeeds');
+            }
+            if (this.resources.houses > 0) {
+                conversationTypes.push('discussHousing');
+            }
+            
+            // Default conversation
+            if (conversationTypes.length === 0) {
+                conversationTypes.push('greeting', 'discussWeather', 'shareStory');
+            }
+            
+            const conversation = conversationTypes[Math.floor(Math.random() * conversationTypes.length)];
+            
+            // Update agent status to show conversation
+            const oldStatus = agent.status;
+            agent.status = `Talking to ${otherAgent.name}`;
+            
+            // Log conversation to memory
+            agent.memory.push({
+                day: this.day,
+                time: this.getTimeString(),
+                with: otherAgent.name,
+                topic: conversation,
+                result: this.getConversationResult(conversation, agent, otherAgent)
+            });
+            
+            // Keep only last 5 conversations
+            if (agent.memory.length > 5) {
+                agent.memory.shift();
+            }
+            
+            // Restore original status after a short time
+            setTimeout(() => {
+                if (agent.status === `Talking to ${otherAgent.name}`) {
+                    agent.status = oldStatus;
+                }
+            }, 2000);
+        }
+    }
+    
+    getConversationResult(conversation, agent, otherAgent) {
+        switch(conversation) {
+            case 'askForFood':
+                if (this.resources.food > 5) {
+                    this.resources.food -= 2;
+                    agent.hunger -= 15;
+                    return `${otherAgent.name} shared food. Hunger -15`;
+                }
+                return `${otherAgent.name} has no food to share`;
+                
+            case 'askForWood':
+                if (this.resources.wood > 10) {
+                    // Wood can't be transferred directly, but gatherer might go get more
+                    return `${otherAgent.name} will gather more wood`;
+                }
+                return `No wood available`;
+                
+            case 'complainAboutNeeds':
+                agent.energy += 5; // Complaining is therapeutic
+                return `Felt better after complaining`;
+                
+            case 'discussHousing':
+                // Discussion about housing might inspire building
+                if (otherAgent.job === 'Builder') {
+                    return `Discussed new house designs`;
+                }
+                return `Talked about living conditions`;
+                
+            case 'discussWeather':
+                return `Discussed the weather`;
+                
+            case 'shareStory':
+                return `Shared a story from day ${Math.floor(Math.random() * this.day) + 1}`;
+                
+            default:
+                return `Said hello`;
+        }
+    }
+    
+    builderBehavior(agent) {
+        // Builders assess community needs
+        const housesNeeded = Math.max(0, Math.ceil(this.agents.length / 2) - this.resources.houses);
+        
+        if (housesNeeded > 0 && this.resources.wood >= 20) {
+            // Building requires energy
+            agent.energy -= 0.03;
+            agent.status = `Building house (${housesNeeded} needed)`;
+            
+            // Consume wood and make progress
+            this.resources.wood -= 1;
+            
+            // Building progress accumulates
+            if (!agent.buildingProgress) agent.buildingProgress = 0;
+            agent.buildingProgress += 1;
+            
+            // House completed when progress reaches 15
+            if (agent.buildingProgress >= 15) {
+                this.resources.houses++;
+                agent.status = 'Built a new house!';
+                agent.buildingProgress = 0;
+                
+                // Log achievement
+                agent.memory.push({
+                    day: this.day,
+                    time: this.getTimeString(),
+                    action: 'building',
+                    result: 'Completed a house'
+                });
+                
+                if (agent.memory.length > 5) {
+                    agent.memory.shift();
+                }
+            }
+            
+            // If too tired, rest
+            if (agent.energy < 30) {
+                agent.status = 'Too tired to build';
+                this.rest(agent);
+            }
+            
+        } else if (this.resources.wood < 20) {
+            // Not enough wood - gather or ask for help
+            agent.status = 'Need more wood to build';
+            
+            // Check if should gather or ask gatherers
+            if (Math.random() < 0.7) {
+                this.gatherWood(agent);
+            } else {
+                // Try to coordinate with gatherers
+                agent.status = 'Coordinating with gatherers';
+            }
+            
+        } else if (housesNeeded === 0) {
+            // Enough houses - help with other tasks
+            agent.status = 'Maintaining buildings';
+            // Maintenance consumes less energy
+            agent.energy -= 0.01;
         }
     }
     
     gathererBehavior(agent) {
-        agent.status = 'Gathering resources';
-        this.gatherWood(agent);
+        // Gatherers decide what to gather based on community needs
+        if (this.resources.wood < 50) {
+            agent.status = 'Gathering wood';
+            this.gatherWood(agent);
+        } else if (this.resources.food < 100) {
+            agent.status = 'Looking for food';
+            this.findFood(agent);
+        } else {
+            // If resources are plentiful, explore for new areas
+            agent.status = 'Exploring for new resources';
+            this.exploreBehavior(agent);
+        }
     }
     
     farmerBehavior(agent) {
+        // Farmers create food over time
         agent.status = 'Farming';
-        if (Math.random() < 0.05) {
-            this.resources.food += 5;
+        
+        // Farmers get tired from work
+        agent.energy -= 0.02;
+        
+        // Food production based on energy and skill
+        if (Math.random() < 0.08 && agent.energy > 40) {
+            const foodProduced = 3 + Math.floor(Math.random() * 4);
+            this.resources.food += foodProduced;
+            agent.status = `Harvested ${foodProduced} food`;
+            
+            // Log production in memory
+            agent.memory.push({
+                day: this.day,
+                time: this.getTimeString(),
+                action: 'farming',
+                result: `Produced ${foodProduced} food`
+            });
+            
+            if (agent.memory.length > 5) {
+                agent.memory.shift();
+            }
+        }
+        
+        // If too tired, rest
+        if (agent.energy < 30) {
+            agent.status = 'Too tired to farm';
+            this.rest(agent);
         }
     }
     
@@ -299,8 +488,8 @@ class PixelCityGame {
     updateTime() {
         if (this.paused) return;
         
-        // Slow down time progression - update every 4 frames
-        if (this.frameCount % 4 === 0) {
+        // Slow down time progression - update every 6 frames
+        if (this.frameCount % 6 === 0) {
             this.time += this.speed;
             if (this.time >= 1440) { // 24 hours
                 this.time = 0;
@@ -443,9 +632,24 @@ class PixelCityGame {
         this.agents.forEach(agent => {
             const agentEl = document.createElement('div');
             agentEl.className = 'agent-item';
+            
+            // Show recent conversation if any
+            let conversationInfo = '';
+            if (agent.memory && agent.memory.length > 0) {
+                const lastMemory = agent.memory[agent.memory.length - 1];
+                if (lastMemory.with || lastMemory.result) {
+                    if (lastMemory.with) {
+                        conversationInfo = `<div class="conversation">💬 ${lastMemory.with}: ${lastMemory.result}</div>`;
+                    } else if (lastMemory.result) {
+                        conversationInfo = `<div class="conversation">📝 ${lastMemory.result}</div>`;
+                    }
+                }
+            }
+            
             agentEl.innerHTML = `
                 <div class="agent-name">${agent.name} (${agent.job})</div>
                 <div class="agent-status">${agent.status} | 🍖${Math.floor(agent.hunger)}% | ⚡${Math.floor(agent.energy)}%</div>
+                ${conversationInfo}
             `;
             agentsContainer.appendChild(agentEl);
         });
@@ -473,7 +677,7 @@ class PixelCityGame {
         // Continue loop with frame rate control
         setTimeout(() => {
             requestAnimationFrame(() => this.gameLoop());
-        }, 1000 / 30); // 30 FPS instead of 60
+        }, 1000 / 20); // 20 FPS for slower, more realistic simulation
     }
 }
 
