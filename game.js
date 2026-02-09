@@ -138,15 +138,15 @@ class PixelCityGame {
     }
     
     updateAgents() {
-        // Slow down agent updates - only update every 20 frames (EXTREMELY SLOW)
-        if (this.frameCount % 20 !== 0) return;
+        // Slow down agent updates - only update every 10 frames (COMFORTABLE PACE)
+        if (this.frameCount % 10 !== 0) return;
         
         this.agents.forEach(agent => {
             if (this.paused) return;
             
-            // Basic needs (EXTREMELY SLOW - 10x slower)
-            agent.hunger += 0.00075; // 10x slower hunger
-            agent.energy -= 0.0004; // 10x slower energy drain
+            // Basic needs (COMFORTABLE PACE)
+            agent.hunger += 0.003; // Moderate hunger
+            agent.energy -= 0.0015; // Moderate energy drain
             
             if (agent.hunger > 80) {
                 agent.status = 'Hungry';
@@ -170,14 +170,14 @@ class PixelCityGame {
                         this.exploreBehavior(agent);
                 }
                 
-                // Social interaction - agents talk to each other occasionally (VERY RARE)
-                if (Math.random() < 0.005) { // 0.5% chance per update (EXTREMELY SLOW)
+                // Social interaction - agents talk to each other occasionally (REASONABLE)
+                if (Math.random() < 0.015) { // 1.5% chance per update (COMFORTABLE)
                     this.socialInteraction(agent);
                 }
             }
             
-            // Move randomly if no target (VERY RARE)
-            if (!agent.target && Math.random() < 0.05) { // 5% chance instead of 30%
+            // Move randomly if no target (REASONABLE)
+            if (!agent.target && Math.random() < 0.15) { // 15% chance (comfortable)
                 this.moveRandomly(agent);
             }
             
@@ -335,7 +335,7 @@ class PixelCityGame {
             
             // Building progress accumulates
             if (!agent.buildingProgress) agent.buildingProgress = 0;
-            agent.buildingProgress += 0.05; // 10x slower building
+            agent.buildingProgress += 0.2; // Reasonable building pace
             
             // House completed when progress reaches 15
             if (agent.buildingProgress >= 15) {
@@ -404,8 +404,8 @@ class PixelCityGame {
         // Farmers get tired from work
         agent.energy -= 0.02;
         
-        // Food production based on energy and skill (EXTREMELY SLOW)
-        if (Math.random() < 0.008 && agent.energy > 40) { // 10x slower
+        // Food production based on energy and skill (COMFORTABLE PACE)
+        if (Math.random() < 0.02 && agent.energy > 40) { // Reasonable pace
             const foodProduced = 3 + Math.floor(Math.random() * 4);
             this.resources.food += foodProduced;
             agent.status = `Harvested ${foodProduced} food`;
@@ -488,8 +488,8 @@ class PixelCityGame {
     updateTime() {
         if (this.paused) return;
         
-        // Slow down time progression - update every 30 frames (EXTREMELY SLOW)
-        if (this.frameCount % 30 === 0) {
+        // Slow down time progression - update every 15 frames (COMFORTABLE PACE)
+        if (this.frameCount % 15 === 0) {
             this.time += this.speed;
             if (this.time >= 1440) { // 24 hours
                 this.time = 0;
@@ -674,10 +674,10 @@ class PixelCityGame {
         // Update UI
         this.updateUI();
         
-        // Continue loop with frame rate control - EXTREMELY SLOW
+        // Continue loop with frame rate control - COMFORTABLE PACE
         setTimeout(() => {
             requestAnimationFrame(() => this.gameLoop());
-        }, 1000 / 5); // 5 FPS (VERY SLOW - like watching paint dry)
+        }, 1000 / 10); // 10 FPS (Good balance - watchable but not frantic)
     }
 }
 
